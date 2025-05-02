@@ -1,11 +1,12 @@
+from PIL import Image
 from PIL.ImageQt import ImageQt
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSize, Qt, QUrl
-from PyQt5.QtGui import (
+from PyQt6 import QtCore  # Changed from PyQt5
+from PyQt6.QtCore import QSize, Qt, QUrl  # Changed from PyQt5
+from PyQt6.QtGui import (  # Changed from PyQt5
     QDesktopServices,
     QPixmap,
 )
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (  # Changed from PyQt5
     QApplication,
     QHBoxLayout,
     QLabel,
@@ -29,9 +30,9 @@ class ImageLabel(QLabel):
 
     def __init__(self, text: str):
         super().__init__(text)
-        self.setAlignment(Qt.AlignCenter)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.resize(512, 512)
-        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self.sizeHint = QSize(512, 512)
         self.setAcceptDrops(False)
 
@@ -52,7 +53,7 @@ class ImageLabel(QLabel):
                 self.current_pixmap.scaled(
                     new_width,
                     new_height,
-                    Qt.KeepAspectRatio,
+                    Qt.AspectRatioMode.KeepAspectRatio  # Updated from Qt.KeepAspectRatio
                 )
             )
         else:
@@ -139,9 +140,26 @@ class BaseWidget(QWidget):
         self.image_index = 0
         self.gen_images = []
         for img in images:
-            im = ImageQt(img).copy()
-            pixmap = QPixmap.fromImage(im)
-            self.gen_images.append(pixmap)
+            if not isinstance(img, Image.Image):
+                print(f"Skipping invalid image type: {type(img)}")
+                continue
+            # Convert to RGB if necessary
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            try:
+                im = ImageQt(img).copy()
+                if im.isNull():
+                    print("Skipping null QImage")
+                    continue
+                print(f"QImage type: {type(im)}, size: {im.size()}, isNull: {im.isNull()}")
+                pixmap = QPixmap.fromImage(im, Qt.ImageConversionFlag.AutoColor)  # PyQt6 enum
+                if pixmap.isNull():
+                    print("Skipping null QPixmap")
+                    continue
+                self.gen_images.append(pixmap)
+            except Exception as e:
+                print(f"Error processing image: {e}")
+                continue
 
         if len(self.gen_images) > 1:
             self.next_btn.setEnabled(True)
@@ -150,7 +168,10 @@ class BaseWidget(QWidget):
             self.next_btn.setEnabled(False)
             self.prev_btn.setEnabled(False)
 
-        self.img.show_image(pixmap=self.gen_images[0])
+        if self.gen_images:
+            self.img.show_image(pixmap=self.gen_images[0])
+        else:
+            self.img.setText("No valid images generated")
 
     def on_show_next_image(self):
         if self.image_index != len(self.gen_images) - 1 and len(self.gen_images) > 0:

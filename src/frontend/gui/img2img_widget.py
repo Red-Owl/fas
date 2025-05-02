@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (  # Updated from PyQt5
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -7,9 +7,7 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QApplication,
 )
-
-
-from PyQt5.QtCore import Qt, QEvent
+from PyQt6.QtCore import Qt, QEvent  # Updated from PyQt5
 
 from PIL import Image
 from constants import DEVICE
@@ -17,7 +15,6 @@ from app_settings import AppSettings
 from urllib.parse import urlparse, unquote
 from frontend.gui.base_widget import BaseWidget
 from backend.models.lcmdiffusion_setting import DiffusionTask
-
 
 class Img2ImgWidget(BaseWidget):
     def __init__(self, config: AppSettings, parent):
@@ -40,13 +37,11 @@ class Img2ImgWidget(BaseWidget):
         hlayout.addWidget(self.img_browse)
 
         self.strength_label = QLabel("Denoising strength: 0.3")
-        self.strength = QSlider(orientation=Qt.Orientation.Horizontal)
+        self.strength = QSlider(orientation=Qt.Orientation.Horizontal)  # Already compatible
         self.strength.setMaximum(10)
         self.strength.setMinimum(1)
         self.strength.setValue(3)
         self.strength.valueChanged.connect(self.update_strength_label)
-        # self.layout().insertWidget(1, self.strength_label)
-        # self.layout().insertWidget(2, self.strength)
         self.layout().addLayout(hlayout)
         self.layout().addWidget(self.strength_label)
         self.layout().addWidget(self.strength)
@@ -64,11 +59,11 @@ class Img2ImgWidget(BaseWidget):
 
     def eventFilter(self, source, event: QEvent):
         """This is the Drag and Drop event filter for the init image QLineEdit"""
-        if event.type() == QEvent.DragEnter:
+        if event.type() == QEvent.Type.DragEnter:  # Updated to PyQt6 enum
             if event.mimeData().hasFormat("text/plain"):
                 event.acceptProposedAction()
             return True
-        elif event.type() == QEvent.Drop:
+        elif event.type() == QEvent.Type.Drop:  # Updated to PyQt6 enum
             event.acceptProposedAction()
             path = unquote(urlparse(event.mimeData().text()).path)
             self.img_path.setText(path)

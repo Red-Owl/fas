@@ -18,10 +18,10 @@ from frontend.utils import (
     is_reshape_required,
 )
 from paths import FastStableDiffusionPaths
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QSize, Qt, QThreadPool, QUrl
-from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import (
+from PyQt6 import QtCore
+from PyQt6.QtCore import QSize, Qt, QThreadPool, QUrl
+from PyQt6.QtGui import QDesktopServices
+from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFileDialog,
@@ -37,28 +37,20 @@ from PyQt5.QtWidgets import (
     QToolButton,
     QVBoxLayout,
     QWidget,
+    QApplication,
 )
 
 from models.interface_types import InterfaceType
 from frontend.gui.base_widget import BaseWidget
 
-# DPI scale fix
-QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
-
+# No DPI scale fix needed; PyQt6 handles high-DPI automatically
 
 class MainWindow(QMainWindow):
     settings_changed = QtCore.pyqtSignal()
-    """ This signal is used for enabling/disabling the negative prompt field for 
-    modes that support it; in particular, negative prompt is supported with OpenVINO models 
-    and in LCM-LoRA mode but not in LCM mode
-    """
 
     def __init__(self, config: AppSettings):
         super().__init__()
         self.config = config
-        # Prevent saved LoRA and ControlNet settings from being used by
-        # default; in GUI mode, the user must explicitly enable those
         if self.config.settings.lcm_diffusion_setting.lora:
             self.config.settings.lcm_diffusion_setting.lora.enabled = False
         if self.config.settings.lcm_diffusion_setting.controlnet:
@@ -168,7 +160,6 @@ class MainWindow(QMainWindow):
         self.variations_tab = ImageVariationsWidget(self.config, self)
         self.upscaler_tab = UpscalerWidget(self.config, self)
 
-        # Add main window tabs here
         self.tab_widget.addTab(self.tab_main, "Text to Image")
         self.tab_widget.addTab(self.img2img_tab, "Image to Image")
         self.tab_widget.addTab(self.variations_tab, "Image Variations")
@@ -181,7 +172,6 @@ class MainWindow(QMainWindow):
 
     def create_settings_tab(self):
         self.lcm_model_label = QLabel("Latent Consistency Model:")
-        # self.lcm_model = QLineEdit(LCM_DEFAULT_MODEL)
         self.lcm_model = QComboBox(self)
         self.lcm_model.addItems(self.config.lcm_models)
         self.lcm_model.currentIndexChanged.connect(self.on_lcm_model_changed)
@@ -289,8 +279,8 @@ class MainWindow(QMainWindow):
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.seed_check)
         hlayout.addWidget(self.seed_value)
-        hspacer = QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        slider_hspacer = QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        hspacer = QSpacerItem(20, 10, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        slider_hspacer = QSpacerItem(20, 10, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.results_path_label = QLabel("Output path:")
         self.results_path = QLineEdit()
@@ -303,7 +293,7 @@ class MainWindow(QMainWindow):
         self.reset.clicked.connect(self.reset_all_settings)
 
         vlayout = QVBoxLayout()
-        vspacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        vspacer = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         vlayout.addItem(hspacer)
         vlayout.setSpacing(3)
         vlayout.addWidget(self.lcm_model_label)
@@ -343,7 +333,7 @@ class MainWindow(QMainWindow):
         vlayout.addLayout(hlayout_path)
         self.tab_settings.setLayout(vlayout)
         hlayout_reset = QHBoxLayout()
-        hspacer = QSpacerItem(20, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        hspacer = QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         hlayout_reset.addItem(hspacer)
         hlayout_reset.addWidget(self.reset)
         vlayout.addLayout(hlayout_reset)
@@ -351,7 +341,7 @@ class MainWindow(QMainWindow):
 
     def create_about_tab(self):
         self.label = QLabel()
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         current_year = datetime.now().year
         self.label.setText(
             f"""<h1>FastSD CPU {APP_VERSION}</h1> 
@@ -375,7 +365,7 @@ class MainWindow(QMainWindow):
                 pixmap.scaled(
                     new_width,
                     new_height,
-                    Qt.KeepAspectRatio,
+                    Qt.AspectRatioMode.KeepAspectRatio,
                 )
             )
         else:
@@ -407,7 +397,7 @@ class MainWindow(QMainWindow):
 
     def on_browse_folder(self):
         options = QFileDialog.Options()
-        options |= QFileDialog.ShowDirsOnly
+        options |= QFileDialog.Option.ShowDirsOnly
 
         folder_path = QFileDialog.getExistingDirectory(
             self, "Select a Folder", "", options=options
@@ -524,11 +514,6 @@ class MainWindow(QMainWindow):
         seed_value = int(self.seed_value.text()) if use_seed else -1
         return seed_value
 
-    # def text_to_image(self):
-    #    self.img.setText("Please wait...")
-    #    worker = ImageGeneratorWorker(self.generate_image)
-    #    self.threadpool.start(worker)
-
     def closeEvent(self, event):
         self.config.settings.lcm_diffusion_setting.seed = self.get_seed_value()
         print(self.config.settings.lcm_diffusion_setting)
@@ -551,7 +536,6 @@ class MainWindow(QMainWindow):
         self.use_lcm_lora.setChecked(False)
 
     def prepare_generation_settings(self, config):
-        """Populate config settings with the values set by the user in the GUI"""
         config.settings.lcm_diffusion_setting.seed = self.get_seed_value()
         config.settings.lcm_diffusion_setting.lcm_lora.lcm_lora_id = (
             self.lcm_lora_id.currentText()
@@ -570,7 +554,6 @@ class MainWindow(QMainWindow):
         config.reshape_required = False
         config.model_id = model_id
         if config.settings.lcm_diffusion_setting.use_openvino:
-            # Detect dimension change
             config.reshape_required = is_reshape_required(
                 self.previous_width,
                 config.settings.lcm_diffusion_setting.image_width,
@@ -586,7 +569,6 @@ class MainWindow(QMainWindow):
         )
 
     def store_dimension_settings(self):
-        """These values are only needed for OpenVINO model reshape"""
         self.previous_width = self.config.settings.lcm_diffusion_setting.image_width
         self.previous_height = self.config.settings.lcm_diffusion_setting.image_height
         self.previous_model = self.config.model_id

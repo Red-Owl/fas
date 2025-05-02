@@ -1,23 +1,20 @@
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     pyqtSlot,
     QRunnable,
     pyqtSignal,
-    pyqtSlot,
+    QObject,  # Removed duplicate pyqtSlot import
 )
-from PyQt5.QtCore import QObject
 import traceback
 import sys
-
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
     result = pyqtSignal(object)
 
-
 class ImageGeneratorWorker(QRunnable):
     def __init__(self, fn, *args, **kwargs):
-        super(ImageGeneratorWorker, self).__init__()
+        super().__init__()
         self.fn = fn
         self.args = args
         self.kwargs = kwargs

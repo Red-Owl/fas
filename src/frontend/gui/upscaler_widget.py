@@ -1,17 +1,15 @@
 from PIL import Image
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (  # Updated from PyQt5
     QApplication,
     QHBoxLayout,
     QRadioButton,
     QWidget,
 )
-
 from app_settings import AppSettings
 from backend.models.upscale import UpscaleMode
 from backend.upscale.upscaler import upscale_image
 from frontend.gui.img2img_widget import Img2ImgWidget
 from paths import FastStableDiffusionPaths
-
 
 class UpscalerWidget(Img2ImgWidget):
     scale_factor = 2.0
@@ -21,7 +19,6 @@ class UpscalerWidget(Img2ImgWidget):
         # Hide prompt and negative prompt widgets
         self.prompt.hide()
         self.neg_prompt.hide()
-        # self.neg_prompt.deleteLater()
         self.strength_label.hide()
         self.strength.hide()
         self.generate.setText("Upscale")

@@ -1,5 +1,5 @@
 from PIL import Image
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QWidget  # Updated from PyQt5
 
 from app_settings import AppSettings
 from backend.models.lcmdiffusion_setting import DiffusionTask
